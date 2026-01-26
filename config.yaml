@@ -1,0 +1,84 @@
+# Traffic Analytics Configuration
+
+# Video source settings
+video:
+  # Source types: "file", "rtsp", "http", "hls", "youtube"
+  source_type: "hls"
+  # Path to video file or stream URL
+  # Examples:
+  #   - Local file: "demo/traffic.mp4"
+  #   - RTSP: "rtsp://camera_ip:554/stream"
+  #   - HLS: "https://stream.kt.kg:5443/live/camera27.m3u8"
+  #   - YouTube: "https://www.youtube.com/watch?v=VIDEO_ID"
+  source: "https://stream.kt.kg:5443/live/camera27.m3u8"
+  # Output video path (null to disable saving)
+  output_path: "output/result.mp4"
+  # Display window
+  show_display: true
+  # Frame skip for performance (1 = process every frame)
+  frame_skip: 1
+
+# Detection settings
+detection:
+  # YOLO model: yolov8n, yolov8s, yolov8m, yolov8l, yolov8x
+  model: "yolov8s"
+  # Confidence threshold
+  confidence: 0.5
+  # Classes to detect (COCO): 2=car, 5=bus, 7=truck, 3=motorcycle
+  classes: [2, 3, 5, 7]
+  # Device: "cpu", "cuda", "mps" (Apple Silicon)
+  device: "mps"
+  # Image size for inference
+  imgsz: 640
+
+# Tracking settings
+tracking:
+  # Tracker: "bytetrack", "botsort"
+  tracker: "bytetrack"
+  # Track persistence (frames to keep lost track)
+  track_buffer: 30
+
+# Counting settings
+counting:
+  # Enable line crossing counter
+  enabled: true
+  # Counting lines: list of {name, start: [x1, y1], end: [x2, y2], direction: "both"|"in"|"out"}
+  lines:
+    - name: "Line 1"
+      start: [100, 400]
+      end: [1180, 400]
+      color: [0, 255, 255]  # Yellow in BGR
+  # Direction vectors (for IN/OUT classification)
+  # Positive Y = down, Negative Y = up
+  in_direction: [0, 1]  # Objects moving down are "IN"
+
+# Visualization settings
+visualization:
+  # Draw bounding boxes
+  show_boxes: true
+  # Draw track trajectories
+  show_trajectories: true
+  # Trajectory length (number of points)
+  trajectory_length: 30
+  # Show track IDs
+  show_ids: true
+  # Show class labels
+  show_labels: true
+  # Show confidence scores
+  show_confidence: false
+  # Show FPS counter
+  show_fps: true
+  # Show counting stats
+  show_stats: true
+  # Box thickness
+  box_thickness: 2
+  # Font scale
+  font_scale: 0.6
+
+# Output settings
+output:
+  # Save events to JSON
+  save_events: true
+  events_path: "output/events.json"
+  # Log interval (seconds)
+  log_interval: 10

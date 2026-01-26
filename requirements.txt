@@ -1,0 +1,17 @@
+# Core dependencies
+ultralytics>=8.0.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+
+# Video streaming
+vidgear>=0.3.0
+
+# Configuration
+pyyaml>=6.0
+
+# Visualization
+supervision>=0.16.0
+
+# Optional: License plate recognition
+# paddlepaddle>=2.5.0
+# paddleocr>=2.7.0
