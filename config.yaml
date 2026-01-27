@@ -22,14 +22,14 @@ video:
 detection:
   # YOLO model: yolov8n, yolov8s, yolov8m, yolov8l, yolov8x
   model: "yolov8s"
-  # Confidence threshold
-  confidence: 0.5
+  # Confidence threshold (lower = more detections, more false positives)
+  confidence: 0.25
   # Classes to detect (COCO): 2=car, 5=bus, 7=truck, 3=motorcycle
   classes: [2, 3, 5, 7]
   # Device: "cpu", "cuda", "mps" (Apple Silicon)
   device: "mps"
-  # Image size for inference
-  imgsz: 640
+  # Image size for inference (higher = better for small objects)
+  imgsz: 1280
 
 # Tracking settings
 tracking:

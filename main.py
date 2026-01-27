@@ -59,7 +59,7 @@ def parse_args():
     parser.add_argument(
         '--source-type', '-t',
         type=str,
-        choices=['file', 'rtsp', 'http', 'youtube'],
+        choices=['file', 'rtsp', 'http', 'hls', 'youtube'],
         help='Override source type from config'
     )
     parser.add_argument(
