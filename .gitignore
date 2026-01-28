@@ -19,9 +19,10 @@ env/
 # YOLO models (large files, download separately)
 *.pt
 
-# Output files (keep demo video)
+# Output files (keep demo)
 output/*
 !output/demo.mp4
+!output/preview.gif
 !output/events.json
 *.avi
 *.jpg

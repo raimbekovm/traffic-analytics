@@ -2,6 +2,8 @@
 
 Real-time vehicle detection, tracking, and traffic violation detection system.
 
+![Demo](output/preview.gif)
+
 ## Features
 
 | Module | Description |
