@@ -25,6 +25,8 @@ from src.video_source import VideoSource
 from src.tracker import VehicleTracker
 from src.counter import LineCrossingCounter
 from src.visualizer import Visualizer, VideoWriter
+from src.calibration import CameraCalibrator, SpeedEstimator
+from src.violations import ViolationDetector, draw_solid_lines
 
 # Configure logging
 logging.basicConfig(
@@ -93,6 +95,11 @@ def parse_args():
         type=float,
         help='Override confidence threshold'
     )
+    parser.add_argument(
+        '--max-frames',
+        type=int,
+        help='Maximum number of frames to process (for recording clips)'
+    )
     return parser.parse_args()
 
 
@@ -151,6 +158,7 @@ def run_pipeline(config: dict, args: argparse.Namespace):
     counting_config = config.get('counting', {})
     viz_config = config.get('visualization', {})
     output_config = config.get('output', {})
+    speed_config = config.get('speed', {})
 
     if args.source:
         video_config['source'] = args.source
@@ -195,7 +203,8 @@ def run_pipeline(config: dict, args: argparse.Namespace):
         device=detection_config.get('device', 'cpu'),
         imgsz=detection_config.get('imgsz', 640),
         track_buffer=tracking_config.get('track_buffer', 30),
-        trajectory_length=viz_config.get('trajectory_length', 30)
+        trajectory_length=viz_config.get('trajectory_length', 30),
+        crop=detection_config.get('crop')
     )
 
     # Initialize counter
@@ -218,6 +227,32 @@ def run_pipeline(config: dict, args: argparse.Namespace):
             lines=counting_lines,
             in_direction=tuple(counting_config.get('in_direction', [0, 1]))
         )
+
+    # Initialize speed estimator
+    speed_estimator = None
+    speed_limit = speed_config.get('speed_limit', 60)
+    calibration_file = speed_config.get('calibration_file', 'calibration.json')
+
+    if speed_config.get('enabled', False) and Path(calibration_file).exists():
+        try:
+            calibrator = CameraCalibrator()
+            calibration = calibrator.load_calibration(calibration_file)
+            speed_estimator = SpeedEstimator(
+                calibration=calibration,
+                fps=video_source.fps
+            )
+            logger.info(f"Speed estimation enabled (limit: {speed_limit} km/h)")
+        except Exception as e:
+            logger.warning(f"Failed to load calibration: {e}")
+
+    # Initialize violation detector
+    violation_detector = None
+    violations_config = config.get('violations', {})
+    solid_lines_config = violations_config.get('solid_lines', [])
+
+    if violations_config.get('enabled', True) and solid_lines_config:
+        violation_detector = ViolationDetector(solid_lines_config)
+        logger.info(f"Violation detection enabled ({len(solid_lines_config)} solid lines)")
 
     # Initialize visualizer
     visualizer = Visualizer(
@@ -277,8 +312,31 @@ def run_pipeline(config: dict, args: argparse.Namespace):
             frame_id = frame_info.frame_id
             frame_count += 1
 
+            # Check max frames limit
+            if args.max_frames and frame_count >= args.max_frames:
+                logger.info(f"Reached max frames limit: {args.max_frames}")
+                break
+
             # Run tracking
             tracking_result = tracker.track(frame, frame_id)
+
+            # Estimate speeds
+            speeds = {}
+            if speed_estimator:
+                for track in tracking_result.tracks:
+                    speed = speed_estimator.estimate_speed(
+                        track_id=track.track_id,
+                        trajectory=track.trajectory,
+                        frame_skip=video_config.get('frame_skip', 1)
+                    )
+                    if speed is not None:
+                        speeds[track.track_id] = speed
+
+            # Count by class (vehicles currently on screen)
+            class_counts = {}
+            for track in tracking_result.tracks:
+                class_name = track.class_name
+                class_counts[class_name] = class_counts.get(class_name, 0) + 1
 
             # Update counter
             counting_stats = None
@@ -298,14 +356,29 @@ def run_pipeline(config: dict, args: argparse.Namespace):
                         f"crossed {event.line_name}"
                     )
 
+            # Check for violations (crossing solid lines)
+            if violation_detector:
+                violations = violation_detector.check_violations(tracking_result.tracks, frame_id)
+
             # Render visualization
             output_frame = visualizer.render(
                 frame=frame,
                 tracks=tracking_result.tracks,
                 counting_lines=counter.counting_lines if counter else None,
                 counting_stats=counting_stats,
-                total_counts=total_counts
+                total_counts=total_counts,
+                speeds=speeds if speed_estimator else None,
+                speed_limit=speed_limit if speed_estimator else None,
+                class_counts=class_counts
             )
+
+            # Draw solid lines and violation counter
+            if violation_detector:
+                output_frame = draw_solid_lines(
+                    output_frame,
+                    violation_detector.solid_lines,
+                    violation_detector.get_violation_count()
+                )
 
             # Write output video
             if video_writer:

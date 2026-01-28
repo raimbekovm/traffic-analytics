@@ -16,13 +16,13 @@ env/
 *.swo
 *~
 
-# YOLO models (downloaded automatically)
+# YOLO models (large files, download separately)
 *.pt
-!yolov8*.pt
 
-# Output files
-output/
-*.mp4
+# Output files (keep demo video)
+output/*
+!output/demo.mp4
+!output/events.json
 *.avi
 *.jpg
 *.png

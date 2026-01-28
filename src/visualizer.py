@@ -106,7 +106,9 @@ class Visualizer:
         self,
         frame: np.ndarray,
         tracks: List,  # List[Track]
-        use_class_colors: bool = True
+        use_class_colors: bool = True,
+        speeds: Optional[Dict[int, float]] = None,
+        speed_limit: Optional[float] = None
     ) -> np.ndarray:
         """
         Draw tracked objects on frame.
@@ -115,6 +117,8 @@ class Visualizer:
             frame: Input frame
             tracks: List of Track objects
             use_class_colors: Use class-specific colors instead of track colors
+            speeds: Dict of track_id -> speed in km/h
+            speed_limit: Speed limit in km/h (exceeding shown in red)
 
         Returns:
             Frame with drawn elements
@@ -181,6 +185,41 @@ class Visualizer:
                     self.font_scale,
                     (255, 255, 255),
                     1,
+                    cv2.LINE_AA
+                )
+
+            # Draw speed if available
+            if speeds and track.track_id in speeds:
+                speed = speeds[track.track_id]
+                x1, y2 = int(track.bbox[0]), int(track.bbox[3])
+
+                # Color based on speed limit
+                if speed_limit and speed > speed_limit:
+                    speed_color = (0, 0, 255)  # Red for speeding
+                    speed_text = f"{speed:.0f} km/h !!!"
+                else:
+                    speed_color = (0, 255, 0)  # Green for normal
+                    speed_text = f"{speed:.0f} km/h"
+
+                # Draw speed below bounding box
+                (text_w, text_h), _ = cv2.getTextSize(
+                    speed_text, cv2.FONT_HERSHEY_SIMPLEX, self.font_scale, 2
+                )
+                cv2.rectangle(
+                    output,
+                    (x1, y2),
+                    (x1 + text_w + 4, y2 + text_h + 8),
+                    speed_color,
+                    -1
+                )
+                cv2.putText(
+                    output,
+                    speed_text,
+                    (x1 + 2, y2 + text_h + 4),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    self.font_scale,
+                    (255, 255, 255),
+                    2,
                     cv2.LINE_AA
                 )
 
@@ -397,7 +436,10 @@ class Visualizer:
         tracks: List = None,
         counting_lines: List = None,
         counting_stats: Dict = None,
-        total_counts: Dict = None
+        total_counts: Dict = None,
+        speeds: Dict = None,
+        speed_limit: float = None,
+        class_counts: Dict = None
     ) -> np.ndarray:
         """
         Render all visualizations on frame.
@@ -408,6 +450,8 @@ class Visualizer:
             counting_lines: List of CountingLine objects
             counting_stats: Statistics by line
             total_counts: Total IN/OUT counts
+            speeds: Dict of track_id -> speed in km/h
+            speed_limit: Speed limit in km/h
 
         Returns:
             Fully rendered frame
@@ -420,11 +464,11 @@ class Visualizer:
 
         # Draw tracks
         if tracks:
-            output = self.draw_tracks(output, tracks)
+            output = self.draw_tracks(output, tracks, speeds=speeds, speed_limit=speed_limit)
 
         # Draw stats panel
         if self.show_stats and total_counts:
-            output = self.draw_stats_panel(output, total_counts, position="top-left")
+            output = self.draw_stats_panel(output, total_counts, class_counts=class_counts, position="top-left")
 
         # Draw FPS
         if self.show_fps:

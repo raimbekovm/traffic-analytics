@@ -90,7 +90,8 @@ class VehicleTracker:
         device: str = "cpu",
         imgsz: int = 640,
         track_buffer: int = 30,
-        trajectory_length: int = 30
+        trajectory_length: int = 30,
+        crop: Optional[Dict] = None
     ):
         """
         Initialize tracker.
@@ -104,6 +105,7 @@ class VehicleTracker:
             imgsz: Input image size
             track_buffer: Frames to keep lost tracks
             trajectory_length: Max trajectory points to store
+            crop: ROI crop settings {top, left, bottom, right} as fractions
         """
         self.model_name = model_name
         self.tracker_type = tracker
@@ -113,12 +115,79 @@ class VehicleTracker:
         self.imgsz = imgsz
         self.track_buffer = track_buffer
         self.trajectory_length = trajectory_length
+        self.crop = crop or {}
 
         self.model = None
         self._trajectories: Dict[int, List[Tuple[float, float]]] = defaultdict(list)
         self._class_map: Dict[int, Tuple[int, str]] = {}  # track_id -> (class_id, class_name)
+        self._locked_class: Dict[int, int] = {}  # track_id -> locked_class_id
+        self._class_streak: Dict[int, Tuple[int, int]] = {}  # track_id -> (class_id, streak_count)
+        self._crop_offset = (0, 0)  # (x_offset, y_offset) for coordinate mapping
+
+        # Minimum consecutive detections to change class
+        self._class_change_threshold = 10
+
+        # Size thresholds for reclassification (car -> bus/truck)
+        # If car bbox area > threshold, reclassify as bus
+        self._bus_min_area = 25000  # pixels^2 (approx 200x125 or larger)
+        self._bus_min_width = 180   # pixels
 
         self._load_model()
+
+    def _reclassify_by_size(self, class_id: int, bbox: np.ndarray) -> int:
+        """
+        Reclassify vehicles based on bounding box size.
+        Large 'car' detections are likely buses or trucks.
+        """
+        if class_id != 2:  # Only reclassify cars
+            return class_id
+
+        width = bbox[2] - bbox[0]
+        height = bbox[3] - bbox[1]
+        area = width * height
+
+        # Large vehicles detected as 'car' -> reclassify as 'bus'
+        if area > self._bus_min_area and width > self._bus_min_width:
+            return 5  # bus
+
+        return class_id
+
+    def _get_stable_class(self, track_id: int, detected_class_id: int) -> Tuple[int, str]:
+        """
+        Get stable class using hysteresis.
+        Class only changes after N consecutive detections of new class.
+        """
+        # If no locked class yet, lock to first detection
+        if track_id not in self._locked_class:
+            self._locked_class[track_id] = detected_class_id
+            self._class_streak[track_id] = (detected_class_id, 1)
+            stable_class_id = detected_class_id
+        else:
+            locked = self._locked_class[track_id]
+
+            # Update streak
+            if track_id in self._class_streak:
+                streak_class, streak_count = self._class_streak[track_id]
+                if detected_class_id == streak_class:
+                    streak_count += 1
+                else:
+                    streak_class = detected_class_id
+                    streak_count = 1
+                self._class_streak[track_id] = (streak_class, streak_count)
+            else:
+                self._class_streak[track_id] = (detected_class_id, 1)
+                streak_count = 1
+                streak_class = detected_class_id
+
+            # Change locked class only if streak threshold reached
+            if streak_class != locked and streak_count >= self._class_change_threshold:
+                self._locked_class[track_id] = streak_class
+                stable_class_id = streak_class
+            else:
+                stable_class_id = locked
+
+        stable_class_name = self.VEHICLE_CLASSES.get(stable_class_id, f"class_{stable_class_id}")
+        return stable_class_id, stable_class_name
 
     def _load_model(self):
         """Load YOLO model."""
@@ -137,6 +206,29 @@ class VehicleTracker:
             logger.error(f"Failed to load model: {e}")
             raise
 
+    def _apply_crop(self, frame: np.ndarray) -> Tuple[np.ndarray, int, int]:
+        """
+        Apply ROI crop to frame for detection.
+
+        Returns:
+            Tuple of (cropped_frame, x_offset, y_offset)
+        """
+        if not self.crop:
+            return frame, 0, 0
+
+        h, w = frame.shape[:2]
+        top = self.crop.get('top', 0.0)
+        left = self.crop.get('left', 0.0)
+        bottom = self.crop.get('bottom', 0.0)
+        right = self.crop.get('right', 0.0)
+
+        y1 = int(h * top)
+        y2 = int(h * (1 - bottom))
+        x1 = int(w * left)
+        x2 = int(w * (1 - right))
+
+        return frame[y1:y2, x1:x2], x1, y1
+
     def track(self, frame: np.ndarray, frame_id: int = 0) -> TrackingResult:
         """
         Run tracking on a frame.
@@ -151,9 +243,13 @@ class VehicleTracker:
         if self.model is None:
             raise RuntimeError("Model not loaded")
 
-        # Run tracking
+        # Apply crop for detection ROI
+        detection_frame, x_offset, y_offset = self._apply_crop(frame)
+        self._crop_offset = (x_offset, y_offset)
+
+        # Run tracking on cropped frame
         results = self.model.track(
-            frame,
+            detection_frame,
             conf=self.confidence,
             classes=self.classes,
             device=self.device,
@@ -173,12 +269,23 @@ class VehicleTracker:
             class_ids = results.boxes.cls.cpu().numpy().astype(int)
 
             for bbox, track_id, conf, cls_id in zip(boxes, track_ids, confidences, class_ids):
-                class_name = self.VEHICLE_CLASSES.get(cls_id, f"class_{cls_id}")
+                # Offset bbox coordinates back to full frame
+                bbox = bbox.copy()
+                bbox[0] += x_offset  # x1
+                bbox[1] += y_offset  # y1
+                bbox[2] += x_offset  # x2
+                bbox[3] += y_offset  # y2
+
+                # Reclassify large cars as buses
+                cls_id = self._reclassify_by_size(cls_id, bbox)
+
+                # Get stable class using hysteresis (prevents flickering)
+                stable_cls_id, class_name = self._get_stable_class(track_id, cls_id)
 
                 # Store class info for this track
-                self._class_map[track_id] = (cls_id, class_name)
+                self._class_map[track_id] = (stable_cls_id, class_name)
 
-                # Update trajectory
+                # Update trajectory (with offset applied)
                 center = ((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2)
                 self._trajectories[track_id].append(center)
 
@@ -190,7 +297,7 @@ class VehicleTracker:
                     track_id=int(track_id),
                     bbox=bbox,
                     confidence=float(conf),
-                    class_id=int(cls_id),
+                    class_id=int(stable_cls_id),
                     class_name=class_name,
                     trajectory=list(self._trajectories[track_id])
                 )
@@ -202,6 +309,8 @@ class VehicleTracker:
         """Reset tracker state."""
         self._trajectories.clear()
         self._class_map.clear()
+        self._locked_class.clear()
+        self._class_streak.clear()
 
         # Reload model to reset internal tracker state
         self._load_model()

@@ -1,0 +1,227 @@
+{
+  "timestamp": "2026-01-28T10:42:34.065852",
+  "total_frames": 600,
+  "total_counts": {
+    "in": 6,
+    "out": 12,
+    "total": 18
+  },
+  "events": [
+    {
+      "track_id": 3,
+      "line_name": "Line 1",
+      "direction": "in",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:41:29.769901",
+      "frame_id": 3,
+      "position": [
+        460.7726135253906,
+        687.7410888671875
+      ]
+    },
+    {
+      "track_id": 2,
+      "line_name": "Line 1",
+      "direction": "out",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:41:31.648636",
+      "frame_id": 21,
+      "position": [
+        599.9225463867188,
+        663.1156005859375
+      ]
+    },
+    {
+      "track_id": 7,
+      "line_name": "Line 1",
+      "direction": "in",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:41:36.477392",
+      "frame_id": 68,
+      "position": [
+        468.0576171875,
+        687.2439575195312
+      ]
+    },
+    {
+      "track_id": 11,
+      "line_name": "Line 1",
+      "direction": "out",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:41:40.139535",
+      "frame_id": 103,
+      "position": [
+        595.5527954101562,
+        661.8353881835938
+      ]
+    },
+    {
+      "track_id": 10,
+      "line_name": "Line 1",
+      "direction": "out",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:41:40.954306",
+      "frame_id": 111,
+      "position": [
+        674.2645263671875,
+        651.2841796875
+      ]
+    },
+    {
+      "track_id": 15,
+      "line_name": "Line 1",
+      "direction": "out",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:41:47.025279",
+      "frame_id": 170,
+      "position": [
+        671.0364990234375,
+        649.9185791015625
+      ]
+    },
+    {
+      "track_id": 30,
+      "line_name": "Line 1",
+      "direction": "out",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:41:49.884624",
+      "frame_id": 198,
+      "position": [
+        596.5264892578125,
+        661.0491943359375
+      ]
+    },
+    {
+      "track_id": 62,
+      "line_name": "Line 1",
+      "direction": "out",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:42:04.949258",
+      "frame_id": 344,
+      "position": [
+        603.0162353515625,
+        661.152587890625
+      ]
+    },
+    {
+      "track_id": 69,
+      "line_name": "Line 1",
+      "direction": "out",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:42:07.378118",
+      "frame_id": 365,
+      "position": [
+        663.1084594726562,
+        651.0436401367188
+      ]
+    },
+    {
+      "track_id": 74,
+      "line_name": "Line 1",
+      "direction": "out",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:42:09.108985",
+      "frame_id": 380,
+      "position": [
+        596.3001708984375,
+        662.5411376953125
+      ]
+    },
+    {
+      "track_id": 67,
+      "line_name": "Line 1",
+      "direction": "in",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:42:11.062324",
+      "frame_id": 397,
+      "position": [
+        516.08447265625,
+        677.1787109375
+      ]
+    },
+    {
+      "track_id": 85,
+      "line_name": "Line 1",
+      "direction": "out",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:42:13.136277",
+      "frame_id": 415,
+      "position": [
+        663.7415161132812,
+        649.958251953125
+      ]
+    },
+    {
+      "track_id": 95,
+      "line_name": "Line 1",
+      "direction": "out",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:42:15.605142",
+      "frame_id": 437,
+      "position": [
+        603.0095825195312,
+        661.4691162109375
+      ]
+    },
+    {
+      "track_id": 72,
+      "line_name": "Line 1",
+      "direction": "in",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:42:16.050125",
+      "frame_id": 441,
+      "position": [
+        526.256103515625,
+        677.34912109375
+      ]
+    },
+    {
+      "track_id": 97,
+      "line_name": "Line 1",
+      "direction": "in",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:42:22.661425",
+      "frame_id": 498,
+      "position": [
+        530.7708740234375,
+        674.4592895507812
+      ]
+    },
+    {
+      "track_id": 119,
+      "line_name": "Line 1",
+      "direction": "out",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:42:23.001454",
+      "frame_id": 501,
+      "position": [
+        668.6182861328125,
+        651.99072265625
+      ]
+    },
+    {
+      "track_id": 132,
+      "line_name": "Line 1",
+      "direction": "in",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:42:26.941802",
+      "frame_id": 536,
+      "position": [
+        487.6203308105469,
+        681.3816528320312
+      ]
+    },
+    {
+      "track_id": 184,
+      "line_name": "Line 1",
+      "direction": "out",
+      "class_name": "car",
+      "timestamp": "2026-01-28T10:42:33.490045",
+      "frame_id": 594,
+      "position": [
+        601.7757568359375,
+        661.9721069335938
+      ]
+    }
+  ]
+}

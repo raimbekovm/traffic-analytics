@@ -70,7 +70,7 @@ class CrossingEvent:
             "class_name": self.class_name,
             "timestamp": self.timestamp.isoformat(),
             "frame_id": self.frame_id,
-            "position": self.position
+            "position": [float(self.position[0]), float(self.position[1])]
         }
 
 
